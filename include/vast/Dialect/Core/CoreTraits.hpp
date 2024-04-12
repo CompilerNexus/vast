@@ -19,23 +19,23 @@ namespace vast::core
     using attr_trait_base = mlir::AttributeTrait::TraitBase< ConcreteType, Derived >;
 
     //
-    // SoftTerminator
+    // SoftTerminatorTrait
     //
     template< typename ConcreteType >
-    struct SoftTerminator : op_trait_base< ConcreteType, SoftTerminator > {};
+    struct SoftTerminatorTrait : op_trait_base< ConcreteType, SoftTerminatorTrait > {};
 
     static inline bool is_soft_terminator(operation op) {
-        return op->hasTrait< SoftTerminator >();
+        return op->hasTrait< SoftTerminatorTrait >();
     }
 
     //
-    // ReturnLikeOpTrait
+    // ReturnLikeTrait
     //
     template< typename ConcreteType >
-    struct ReturnLikeOpTrait : op_trait_base< ConcreteType, ReturnLikeOpTrait > {};
+    struct ReturnLikeTrait : op_trait_base< ConcreteType, ReturnLikeTrait > {};
 
-    static inline bool is_return(mlir::Operation *op) {
-        return op->hasTrait< ReturnLikeOpTrait >();
+    static inline bool is_return_like(operation op) {
+        return op->hasTrait< ReturnLikeTrait >();
     }
 } // namespace vast::core
 
