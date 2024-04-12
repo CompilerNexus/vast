@@ -8,26 +8,34 @@ VAST_RELAX_WARNINGS
 #include <mlir/IR/OpDefinition.h>
 VAST_UNRELAX_WARNINGS
 
+#include "vast/Util/Common.hpp"
+
 namespace vast::core
 {
-    template< typename concrete_t >
-    struct soft_terminator : mlir::OpTrait::TraitBase< concrete_t,
-                                                       soft_terminator >
-    {};
+    template< typename ConcreteType, template< typename > class Derived >
+    using op_trait_base = mlir::OpTrait::TraitBase< ConcreteType, Derived >;
 
-    static inline bool is_soft_terminator( mlir::Operation *op )
-    {
-        return op->hasTrait< soft_terminator >();
+    template< typename ConcreteType, template< typename > class Derived >
+    using attr_trait_base = mlir::AttributeTrait::TraitBase< ConcreteType, Derived >;
+
+    //
+    // SoftTerminator
+    //
+    template< typename ConcreteType >
+    struct SoftTerminator : op_trait_base< ConcreteType, SoftTerminator > {};
+
+    static inline bool is_soft_terminator(operation op) {
+        return op->hasTrait< SoftTerminator >();
     }
 
-    template< typename concrete_t >
-    struct return_trait : mlir::OpTrait::TraitBase< concrete_t,
-                                                    return_trait >
-    {};
+    //
+    // ReturnLikeOpTrait
+    //
+    template< typename ConcreteType >
+    struct ReturnLikeOpTrait : op_trait_base< ConcreteType, ReturnLikeOpTrait > {};
 
-    static inline bool is_return( mlir::Operation *op )
-    {
-        return op->hasTrait< return_trait >();
+    static inline bool is_return(mlir::Operation *op) {
+        return op->hasTrait< ReturnLikeOpTrait >();
     }
 } // namespace vast::core
 
