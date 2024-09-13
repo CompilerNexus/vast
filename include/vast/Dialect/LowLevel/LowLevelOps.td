@@ -25,7 +25,7 @@ def LowLevel_StructGEPOp
     let description = [{ VAST struct gep operation }];
 }
 
-def Subscript
+def LowLevel_Subscript
     : LowLevel_Op< "subscript" >
     , Arguments<(ins
         AnyType:$array,
@@ -41,7 +41,7 @@ def Subscript
   }];
 }
 
-def ArgAlloca
+def LowLevel_ArgAlloca
     : LowLevel_Op< "arg_alloca" >
     , Arguments<(ins AnyType:$fn_arg)>
     , Results<(outs AnyType:$result)>
@@ -53,7 +53,7 @@ def ArgAlloca
     }];
 }
 
-def Alloca
+def LowLevel_Alloca
     : LowLevel_Op< "alloca" >,
       Results<(outs AnyType:$result)>
 {
@@ -70,7 +70,7 @@ class PointerPointeeTypeMatch< string ptr, string val >
                       "? mlir::cast< ElementTypeInterface >($_self).getElementType()"
                       ": mlir::Type{}" >;
 
-def Load
+def LowLevel_Load
     : LowLevel_Op< "load", [PointerPointeeTypeMatch<"ptr", "result"> ] >
     , Arguments<(ins ElementTypeInterface:$ptr)>
     , Results<(outs AnyType:$result)>
@@ -82,7 +82,7 @@ def Load
     }];
 }
 
-def Store
+def LowLevel_Store
     : LowLevel_Op< "store", [PointerPointeeTypeMatch<"ptr", "val">]>
     , Arguments<(ins AnyType:$val, ElementTypeInterface:$ptr)>
 {
@@ -93,22 +93,23 @@ def Store
     }];
 }
 
-def UninitializedVar
-    : LowLevel_Op< "uninitialized_var", [Core_VarSymbol] >
+def LowLevel_Cell
+    : LowLevel_Op< "cell", [Core_VarSymbol] >
+    , Arguments<(ins SymbolNameAttr:$sym_name)>
     , Results<(outs AnyType:$result)>
 {
-    let summary = "Declaration of variable that have not been initialized yet.";
-    let description = [{ Declaration of variable that have not been initialized yet. }];
+    let summary = "Declaration of a cell.";
+    let description = [{ TBD }];
 
     let results = (outs AnyType:$result);
 
     let assemblyFormat = [{
-        attr-dict `:` type($result)
+        $sym_name attr-dict `:` type($result)
     }];
 }
 
-def InitializeVar
-    : LowLevel_Op< "initialize" >
+def LowLevel_InitCell
+    : LowLevel_Op< "init" >
     , Arguments<(ins AnyType:$var, Variadic<AnyType>:$elements)>
     , Results<(outs AnyType:$result)>
 {
@@ -124,7 +125,7 @@ def InitializeVar
     }];
 }
 
-def Concat
+def LowLevel_Concat
     : LowLevel_Op< "concat" >
     , Arguments<(ins Variadic<AnyType>:$args)>
     , Results<(outs AnyType:$result)>
@@ -139,7 +140,7 @@ def Concat
     }];
 }
 
-def Extract
+def LowLevel_Extract
     : LowLevel_Op< "extract" >
     , Arguments<(ins AnyType:$arg, TypedAttrInterface:$from, TypedAttrInterface:$to)>
     , Results<(outs AnyType:$result)>
@@ -186,7 +187,7 @@ def Extract
     }];
 }
 
-def Br
+def LowLevel_Br
     : LowLevel_Op< "br",
         [Terminator, DeclareOpInterfaceMethods<BranchOpInterface>]
       >
@@ -215,7 +216,7 @@ def Br
     }];
 }
 
-def CondBr
+def LowLevel_CondBr
     : LowLevel_Op< "cond_br", [Terminator, AttrSizedOperandSegments] >
     , Arguments<(ins AnyType:$cond, Variadic<AnyType>:$trueOperands, Variadic<AnyType>:$falseOperands )>
 {
@@ -255,7 +256,7 @@ def CondBr
     }];
 }
 
-def ScopeRet
+def LowLevel_ScopeRet
     : LowLevel_Op< "scope_ret", [Terminator] >
 {
     let summary = "Terminator of scope.";
@@ -264,7 +265,7 @@ def ScopeRet
     let assemblyFormat = [{attr-dict}];
 }
 
-def ScopeRecurse
+def LowLevel_ScopeRecurse
     : LowLevel_Op< "scope_recurse", [Terminator] >
 {
     let summary = "Jump to first block of scope.";
@@ -273,7 +274,7 @@ def ScopeRecurse
     let assemblyFormat = [{attr-dict}];
 }
 
-def CondScopeRet
+def LowLevel_CondScopeRet
     : LowLevel_Op< "cond_scope_ret", [Terminator] >
 {
     let summary = "Terminator of scope if condition is met, otherwise branch.";
@@ -295,7 +296,7 @@ def CondScopeRet
         $dest (`(` $dest_operands^ `:` type($dest_operands) `)`)? attr-dict
     }];}
 
-def ReturnOp
+def LowLevel_ReturnOp
     : LowLevel_Op< "return", [Terminator, Core_ReturnLikeTrait] >
     , Arguments<(ins Variadic<AnyType>:$result)>
 {
@@ -307,7 +308,7 @@ def ReturnOp
     let assemblyFormat = "($result^ `:` type($result))? attr-dict";
 }
 
-def Scope
+def LowLevel_Scope
     : LowLevel_Op< "scope", [NoRegionArguments, NoTerminator] >
 {
     let summary = "Scope, holds one region.";
@@ -331,7 +332,7 @@ def Scope
     }];
 }
 
-def InlineScope
+def LowLevel_InlineScope
     : LowLevel_Op< "inline_scope", [NoRegionArguments] >
 {
     let summary = "Scope, that forwards (cond)scope return up.";

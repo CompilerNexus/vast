@@ -79,6 +79,22 @@ def FnArgsToAlloca : Pass<"vast-fn-args-to-alloca", "core::ModuleOp"> {
   ];
 }
 
+def CellsToAllocas : Pass<"vast-cells-to-allocas", "core::ModuleOp"> {
+  let summary = "Generate `ll.alloca` for variables.";
+  let description = [{
+    Lowers cells into explicit memory using `ll.alloca`.
+
+    This changes types to pointers, but does not replace variable references,
+    which still operate on the original variable name and type.
+  }];
+
+  let constructor = "vast::createCellsToAllocasPass()";
+  let dependentDialects = [
+    "vast::ll::LowLevelDialect",
+    "vast::hl::HighLevelDialect",
+  ];
+}
+
 def LowerValueCategories : Pass<"vast-lower-value-categories", "core::ModuleOp"> {
   let summary = "Lower `hl.lvalue` into explicit pointers and loads.";
   let description = [{

@@ -143,39 +143,39 @@ namespace vast::conv {
             }
         };
 
-        template< typename op_t >
-        struct memory_allocation : base_pattern< op_t >
-        {
-            using base = base_pattern< op_t >;
+        // template< typename op_t >
+        // struct memory_allocation : base_pattern< op_t >
+        // {
+        //     using base = base_pattern< op_t >;
 
-            VAST_DEFINE_REWRITE {
-                rewriter.replaceOp(op, allocate(op, rewriter));
-                return mlir::success();
-            }
+        //     VAST_DEFINE_REWRITE {
+        //         rewriter.replaceOp(op, allocate(op, rewriter));
+        //         return mlir::success();
+        //     }
 
-            auto allocate(op_t op, auto &rewriter) const {
-                auto type = this->tc.convert_type_to_type(op.getType());
-                return rewriter.template create< ll::Alloca >(op.getLoc(), *type);
-            }
+        //     auto allocate(op_t op, auto &rewriter) const {
+        //         auto type = this->tc.convert_type_to_type(op.getType());
+        //         return rewriter.template create< ll::Alloca >(op.getLoc(), *type);
+        //     }
 
-            auto initialize(auto allocation, mlir_value value, auto &rewriter) const {
-                return rewriter.template create< ll::Store >(
-                    allocation.getLoc(), value, allocation
-                );
-            }
-        };
+        //     auto initialize(auto allocation, mlir_value value, auto &rewriter) const {
+        //         return rewriter.template create< ll::Store >(
+        //             allocation.getLoc(), value, allocation
+        //         );
+        //     }
+        // };
 
-        template< typename op_t >
-        struct allocate_and_propagate : memory_allocation< op_t >
-        {
-            using base = memory_allocation< op_t >;
+        // template< typename op_t >
+        // struct allocate_and_propagate : memory_allocation< op_t >
+        // {
+        //     using base = memory_allocation< op_t >;
 
-            VAST_DEFINE_REWRITE {
-                auto ptr = this->allocate(op, rewriter);
-                rewriter.replaceOp(op, ptr);
-                return mlir::success();
-            }
-        };
+        //     VAST_DEFINE_REWRITE {
+        //         auto ptr = this->allocate(op, rewriter);
+        //         rewriter.replaceOp(op, ptr);
+        //         return mlir::success();
+        //     }
+        // };
 
         template< typename op_t >
         struct fn
@@ -193,19 +193,19 @@ namespace vast::conv {
             }
         };
 
-        template< typename op_t >
-        struct with_store : memory_allocation< op_t >
-        {
-            using base = memory_allocation< op_t >;
+        // template< typename op_t >
+        // struct with_store : memory_allocation< op_t >
+        // {
+        //     using base = memory_allocation< op_t >;
 
-            VAST_DEFINE_REWRITE {
-                auto allocation = this->allocate(op, rewriter);
-                this->initialize(allocation, ops.getOperands()[0], rewriter);
-                rewriter.replaceOp(op, allocation);
+        //     VAST_DEFINE_REWRITE {
+        //         auto allocation = this->allocate(op, rewriter);
+        //         this->initialize(allocation, ops.getOperands()[0], rewriter);
+        //         rewriter.replaceOp(op, allocation);
 
-                return mlir::success();
-            }
-        };
+        //         return mlir::success();
+        //     }
+        // };
 
         template< typename op_t >
         struct as_load : base_pattern< op_t >
@@ -316,23 +316,21 @@ namespace vast::conv {
             }
         };
 
-        struct prefix_tag
-        {};
+        struct prefix_tag {};
 
-        struct postfix_tag
-        {};
+        struct postfix_tag {};
 
-        template< typename Tag >
+        template< typename tag >
         constexpr static bool prefix_yield() {
-            return std::is_same_v< Tag, prefix_tag >;
+            return std::is_same_v< tag, prefix_tag >;
         }
 
-        template< typename Tag >
+        template< typename tag >
         constexpr static bool postfix_yield() {
-            return std::is_same_v< Tag, postfix_tag >;
+            return std::is_same_v< tag, postfix_tag >;
         }
 
-        template< typename op_t, typename Trg, typename YieldAt >
+        template< typename op_t, typename trg, typename YieldAt >
         struct unary_in_place : base_pattern< op_t >
         {
             using base = base_pattern< op_t >;
@@ -346,7 +344,7 @@ namespace vast::conv {
 
                 auto value  = rewriter.create< ll::Load >(op.getLoc(), type, arg);
                 auto one    = this->iN(rewriter, op.getLoc(), value.getType(), 1);
-                auto adjust = rewriter.create< Trg >(op.getLoc(), type, value, one);
+                auto adjust = rewriter.create< trg >(op.getLoc(), type, value, one);
 
                 rewriter.create< ll::Store >(op.getLoc(), adjust, arg);
 
@@ -362,7 +360,7 @@ namespace vast::conv {
                 return logical_result::success();
             }
 
-            static void legalize(mlir::ConversionTarget &trg) { trg.addIllegalOp< op_t >(); }
+            static void legalize(mlir::ConversionTarget &t) { t.addIllegalOp< op_t >(); }
         };
 
         using unary_in_place_conversions = util::type_list<
@@ -370,9 +368,10 @@ namespace vast::conv {
             unary_in_place< hl::PostIncOp, hl::AddIOp, postfix_tag >,
 
             unary_in_place< hl::PreDecOp, hl::SubIOp, prefix_tag >,
-            unary_in_place< hl::PostDecOp, hl::SubIOp, postfix_tag > >;
+            unary_in_place< hl::PostDecOp, hl::SubIOp, postfix_tag >
+        >;
 
-        template< typename op_t, typename Trg >
+        template< typename op_t, typename trg >
         struct assign_pattern : base_pattern< op_t >
         {
             using base = base_pattern< op_t >;
@@ -391,9 +390,9 @@ namespace vast::conv {
                 // Probably the easiest way to compose this (some template specialization would
                 // require a lot of boilerplate).
                 auto new_op = [&]() {
-                    if constexpr (!std::is_same_v< Trg, void >) {
+                    if constexpr (!std::is_same_v< trg, void >) {
                         auto load_lhs = rewriter.create< ll::Load >(op.getLoc(), trg_type, lhs);
-                        return rewriter.create< Trg >(op.getLoc(), trg_type, load_lhs, rhs);
+                        return rewriter.create< trg >(op.getLoc(), trg_type, load_lhs, rhs);
                     } else {
                         return rhs;
                     }
@@ -405,7 +404,7 @@ namespace vast::conv {
                 return logical_result::success();
             }
 
-            static void legalize(mlir::ConversionTarget &trg) { trg.addIllegalOp< op_t >(); }
+            static void legalize(mlir::ConversionTarget &t) { t.addIllegalOp< op_t >(); }
         };
 
         using assign_conversions = util::type_list<
@@ -434,18 +433,19 @@ namespace vast::conv {
             assign_pattern< hl::BinLShrAssignOp, hl::BinLShrOp >,
             assign_pattern< hl::BinAShrAssignOp, hl::BinAShrOp >,
 
-            assign_pattern< hl::AssignOp, void > >;
+            assign_pattern< hl::AssignOp, void >
+        >;
 
         template< typename op_t, typename yield_op_t >
         struct propagate_yield : base_pattern< op_t >
         {
             using base = base_pattern< op_t >;
             using base::base;
+            using adaptor_t = typename op_t::Adaptor;
 
             logical_result matchAndRewrite(
-                        op_t op, typename op_t::Adaptor ops,
-                        conversion_rewriter &rewriter) const override
-            {
+                op_t op, adaptor_t ops, conversion_rewriter &rewriter
+            ) const override {
                 auto body = op.getBody();
                 if (!body)
                     return logical_result::success();
@@ -521,14 +521,14 @@ namespace vast::conv {
             auto trg = mlir::ConversionTarget(mctx);
 
             patterns.add< fallback >(tc, mctx);
-            patterns.add< with_store< ll::ArgAlloca > >(mctx, tc);
-            patterns.add< store_and_forward_ptr< ll::InitializeVar > >(mctx, tc);
-            patterns
-                .add< ignore< hl::DeclRefOp >, ignore< hl::Deref >, ignore< hl::AddressOf > >(
-                    mctx, tc
-                );
+            // patterns.add< with_store< ll::ArgAlloca > >(mctx, tc);
+            // patterns.add< store_and_forward_ptr< ll::InitCell > >(mctx, tc);
+            patterns.add<
+                ignore< hl::Deref >,
+                ignore< hl::AddressOf >
+            >(mctx, tc);
 
-            patterns.add< memory_allocation< ll::UninitializedVar > >(mctx, tc);
+            // patterns.add< memory_allocation< ll::Cell > >(mctx, tc);
             patterns.add< subscript >(mctx, tc);
 
             // implicit casts
@@ -557,7 +557,8 @@ namespace vast::conv {
             });
 
             trg.addIllegalOp<
-                ll::InitializeVar, hl::PreIncOp, hl::PreDecOp, hl::PostIncOp, hl::PreIncOp >();
+                ll::InitCell, hl::PreIncOp, hl::PreDecOp, hl::PostIncOp, hl::PreIncOp
+            >();
 
             // This will never have correct types but we want to have it legal.
             trg.addLegalOp< mlir::UnrealizedConversionCastOp >();

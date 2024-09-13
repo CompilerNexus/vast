@@ -98,8 +98,9 @@ namespace vast::conv {
                 return;
             }
 
-            auto lowered =
-                bld.template create< ll::ArgAlloca >(arg.getLoc(), arg.getType(), arg);
+            auto lowered = bld.template create< ll::ArgAlloca >(
+                arg.getLoc(), arg.getType(), arg
+            );
 
             arg.replaceAllUsesWith(lowered);
             lowered->setOperand(0, arg);

@@ -26,7 +26,7 @@ namespace vast::conv::pipeline {
 
     pipeline_step_ptr core_to_llvm() {
         return nested< mlir::ModuleOp >(createCoreToLLVMPass)
-            .depends_on(to_ll, irs_to_llvm);
+            .depends_on(to_ll, to_mem, irs_to_llvm);
     }
 
     pipeline_step_ptr to_llvm() {

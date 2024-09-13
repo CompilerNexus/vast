@@ -13,6 +13,8 @@ VAST_RELAX_WARNINGS
 #include "mlir/Transforms/DialectConversion.h"
 VAST_UNRELAX_WARNINGS
 
+#include <gap/core/crtp.hpp>
+
 namespace vast {
 
     namespace detail {
@@ -106,6 +108,7 @@ namespace vast {
     {
         using base = mlir::OpConversionPattern< op_t >;
         using base::base;
+        using adaptor_t = typename op_t::Adaptor;
 
         static void legalize(conversion_target &trg) { trg.addIllegalOp< op_t >(); }
     };
@@ -116,10 +119,30 @@ namespace vast {
     {
         using base = operation_conversion_pattern< src_op >;
         using base::base;
+        using adaptor_t = base::adaptor_t;
 
         static void legalize(conversion_target &trg) {
             trg.addIllegalOp< src_op >();
             trg.addLegalOp< dst_op >();
+        }
+    };
+
+    template< typename derived_pattern, typename src_op, typename dst_op >
+    struct replace_pattern
+        : one_to_one_conversion_pattern< src_op, dst_op >
+        , gap::core::crtp< derived_pattern, replace_pattern >
+    {
+        using base = one_to_one_conversion_pattern< src_op, dst_op >;
+        using base::base;
+        using adaptor_t = base::adaptor_t;
+
+        using gap::core::crtp< derived_pattern, replace_pattern >::underlying;
+
+        logical_result matchAndRewrite(
+            src_op op, adaptor_t adaptor, conversion_rewriter &rewriter
+        ) const override {
+            rewriter.replaceOp(op, underlying().replacement(op, adaptor, rewriter));
+            return mlir::success();
         }
     };
 

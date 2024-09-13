@@ -322,29 +322,29 @@ namespace vast
             {
                 // TODO(conv:abi): Can direct have more return types?
                 VAST_ASSERT(direct.getNumResults() == 1 && direct.getNumOperands() > 0);
+
                 // Not invoking yet, since I may do something if value is lvalue.
-                auto convert_values = [&]()
-                {
+                auto convert_values = [&] {
                     std::vector< mlir::Value > init_values;
                     for (auto res_type : direct.getResult().getTypes())
                         init_values.push_back(convert(res_type, direct));
                     return init_values;
                 };
 
-                if (!mlir::isa< hl::LValueType >(direct.getResult().getTypes()[0]))
-                {
+                // auto loc = direct.getLoc();
+                auto rty = direct.getResult().getType().front();
+
+                if (!mlir::isa< hl::LValueType >(rty)) {
                     for (auto v : convert_values())
                         co_yield v;
                     co_return;
                 }
 
-                auto var = state.rewriter.template create< ll::UninitializedVar >(
-                        direct.getLoc(), direct.getResult().getType());
-
-                co_yield state.rewriter.template create< ll::InitializeVar >(
-                        direct.getLoc(),
-                        var.getResult().getType(),
-                        var, convert_values());
+                VAST_UNIMPLEMENTED_MSG("Not implemented yet.");
+                // auto var = state.rewriter.template create< ll::Cell >(loc, rty);
+                // co_yield state.rewriter.template create< ll::InitializeVar >(
+                //     loc, rty, var, convert_values()
+                // );
             }
         };
 

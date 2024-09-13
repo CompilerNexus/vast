@@ -57,48 +57,30 @@ namespace vast
         struct vardecl_op : BasePattern< hl::VarDeclOp >
         {
             using op_t = hl::VarDeclOp;
+            using adaptor_t = typename op_t::Adaptor;
             using Base = BasePattern< op_t >;
             using Base::Base;
 
             mlir::LogicalResult matchAndRewrite(
-                op_t op, typename op_t::Adaptor ops,
-                conversion_rewriter &rewriter) const override
-            {
+                op_t op, adaptor_t ops, conversion_rewriter &rewriter
+            ) const override {
                 auto trg_type = op.getType();
 
-                auto uninit_var = rewriter.create< ll::UninitializedVar >(op.getLoc(),
-                                                                          trg_type);
+                auto var = rewriter.create< ll::Cell >(
+                    op.getLoc(), trg_type, op.getSymName()
+                );
 
-                if (op.getInitializer().empty())
-                {
-                    rewriter.replaceOp(op, uninit_var);
+                if (op.getInitializer().empty()) {
+                    rewriter.replaceOp(op, var);
                     return mlir::success();
                 }
 
-                // This deals with cases where the initializer references
-                // the variable itself - int *x = malloc(sizeof(*x));
-                // We can't reference the initialized value so we use the
-                // initialized one
-                auto fix_init_refs = [&](){
-                    auto var = op.getResult();
-                    for (auto user : op->getUsers()) {
-                        if (op->isAncestor(user)) {
-                            for (op_operand& operand : user->getOpOperands()) {
-                                if (operand.is(var)) {
-                                    user->setOperand(operand.getOperandNumber(), uninit_var);
-                                }
-                            }
-                        }
-                    }
-                };
-                rewriter.modifyOpInPlace(op, fix_init_refs);
-
                 auto yield = inline_init_region< hl::ValueYieldOp >(op, rewriter);
                 rewriter.setInsertionPointAfter(yield);
-                auto initialize = rewriter.create< ll::InitializeVar >(
-                        yield.getLoc(),
-                        trg_type,
-                        uninit_var, yield.getResult());
+
+                auto initialize = rewriter.create< ll::InitCell >(
+                    yield.getLoc(), trg_type, var, yield.getResult()
+                );
 
                 rewriter.replaceOp(op, initialize);
                 rewriter.eraseOp(yield);

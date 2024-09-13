@@ -48,16 +48,26 @@ namespace vast::conv::pipeline {
         return pass(createLowerValueCategoriesPass);
     }
 
+    pipeline_step_ptr vars_to_allocas() {
+        return pass(createCellsToAllocasPass);
+    }
+
     pipeline_step_ptr to_ll() {
         return compose( "to-ll",
             hl_to_ll_func,
             hl_to_ll_vars,
             hl_to_ll_cf,
             hl_to_ll_geps,
-            fn_args_to_alloca,
-            lower_value_categories,
             lazy_regions
         );
+    }
+
+    pipeline_step_ptr to_mem() {
+        return compose( "to-mem",
+            vars_to_allocas,
+            fn_args_to_alloca,
+            lower_value_categories
+        ).depends_on(to_ll);
     }
 
 } // namespace vast::conv::pipeline

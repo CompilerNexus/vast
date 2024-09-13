@@ -36,7 +36,8 @@ namespace vast::conv::irstollvm {
             );
 
             return rewriter.template create< LLVM::AllocaOp >(
-                loc, res_type, element_type, count, 0);
+                loc, res_type, element_type, count, 0
+            );
         }
 
         // Some operations want more fine-grained control, and we really just
@@ -50,7 +51,8 @@ namespace vast::conv::irstollvm {
         }
 
         auto mk_index(auto loc, std::size_t idx, auto &rewriter) const
-            -> mlir::LLVM::ConstantOp {
+            -> mlir::LLVM::ConstantOp
+        {
             auto index_type = convert(rewriter.getIndexType());
             return rewriter.template create< mlir::LLVM::ConstantOp >(
                 loc, index_type, rewriter.getIntegerAttr(index_type, idx)

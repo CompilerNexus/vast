@@ -82,24 +82,29 @@ namespace vast {
         }
     };
 
-    // Configuration class for LLVM conversion
-    using llvm_type_converter = conv::tc::FullLLVMTypeConverter;
+    // type conversion configuration class
+    template< typename type_converter >
+    struct type_conversion_config : base_conversion_config {
+        type_converter &tc;
 
-    struct llvm_conversion_config : base_conversion_config {
-        llvm_type_converter &tc;
-
-        llvm_conversion_config(
+        type_conversion_config(
             rewrite_pattern_set patterns,
             conversion_target target,
-            llvm_type_converter &tc
+            type_converter &tc
         )
             : base_conversion_config{std::move(patterns), std::move(target)}, tc(tc)
         {}
 
-        llvm_conversion_config(llvm_conversion_config &&other)
-            : base_conversion_config{std::move(other.patterns), std::move(other.target)}, tc(other.tc)
-        {}
+        template< typename pattern >
+        void add_pattern() {
+            patterns.template add< pattern >(patterns.getContext(), tc);
+        }
+    };
 
+    // Configuration class for LLVM conversion
+    using llvm_type_converter = conv::tc::FullLLVMTypeConverter;
+
+    struct llvm_conversion_config : type_conversion_config< llvm_type_converter > {
         template< typename pattern >
         void add_pattern() {
             patterns.template add< pattern >(tc);

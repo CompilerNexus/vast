@@ -325,47 +325,48 @@ namespace vast::conv::irstollvm
     };
 
 
-    struct uninit_var : base_pattern< ll::UninitializedVar >
-    {
-        using op_t = ll::UninitializedVar;
-        using base = base_pattern< op_t >;
-        using base::base;
+    // struct named_cell : base_pattern< ll::Cell >
+    // {
+    //     using op_t = ll::Cell;
+    //     using base = base_pattern< op_t >;
+    //     using base::base;
+    //     using adaptor_t = typename op_t::Adaptor;
 
-        logical_result matchAndRewrite(
-                op_t op, typename op_t::Adaptor ops,
-                conversion_rewriter &rewriter) const override
-        {
-            auto et = converted_element_type(op.getType());
-            auto alloca = mk_alloca(rewriter, convert(op.getType()), et, op.getLoc());
-            rewriter.replaceOp(op, alloca);
+    //     logical_result matchAndRewrite(
+    //         op_t op, adaptor_t ops, conversion_rewriter &rewriter
+    //     ) const override {
+    //         auto et = converted_element_type(op.getType());
+    //         op.dump();
+    //         et.dump();
+    //         auto alloca = mk_alloca(rewriter, convert(op.getType()), et, op.getLoc());
+    //         rewriter.replaceOp(op, alloca);
 
-            return logical_result::success();
-        }
-    };
+    //         return logical_result::success();
+    //     }
+    // };
 
-    struct initialize_var : base_pattern< ll::InitializeVar >,
-                            value_builder< initialize_var >
-    {
-        using op_t = ll::InitializeVar;
-        using base = base_pattern< op_t >;
-        using base::base;
+    // struct init_cell : base_pattern< ll::InitCell >, value_builder< init_cell >
+    // {
+    //     using op_t = ll::InitCell;
+    //     using base = base_pattern< op_t >;
+    //     using base::base;
 
-        logical_result matchAndRewrite(
-                op_t op, typename op_t::Adaptor ops,
-                conversion_rewriter &rewriter) const override
-        {
-            auto element = this->construct_value(rewriter, ops.getElements()[0]);
-            auto ptr = ops.getVar();
+    //     logical_result matchAndRewrite(
+    //             op_t op, typename op_t::Adaptor ops,
+    //             conversion_rewriter &rewriter) const override
+    //     {
+    //         auto element = this->construct_value(rewriter, ops.getElements()[0]);
+    //         auto ptr = ops.getVar();
 
-            rewriter.template create< LLVM::StoreOp >(
-                    element.getLoc(),
-                    element,
-                    ptr);
-            rewriter.replaceOp(op, ptr);
+    //         rewriter.template create< LLVM::StoreOp >(
+    //                 element.getLoc(),
+    //                 element,
+    //                 ptr);
+    //         rewriter.replaceOp(op, ptr);
 
-            return logical_result::success();
-        }
-    };
+    //         return logical_result::success();
+    //     }
+    // };
 
     struct init_list_expr : base_pattern< hl::InitListExpr >,
                             value_builder< init_list_expr >
@@ -386,82 +387,77 @@ namespace vast::conv::irstollvm
         }
     };
 
-    struct vardecl : base_pattern< hl::VarDeclOp >
-    {
-        using op_t = hl::VarDeclOp;
-        using base = base_pattern< op_t >;
-        using base::base;
+    // struct vardecl : base_pattern< hl::VarDeclOp >
+    // {
+    //     using op_t = hl::VarDeclOp;
+    //     using base = base_pattern< op_t >;
+    //     using base::base;
 
-        logical_result matchAndRewrite(
-                op_t op, typename op_t::Adaptor ops,
-                conversion_rewriter &rewriter) const override
-        {
-            auto t = mlir::dyn_cast< hl::PointerType >(op.getType());
-            auto target_type = this->convert(t.getElementType());
+    //     logical_result matchAndRewrite(
+    //             op_t op, typename op_t::Adaptor ops,
+    //             conversion_rewriter &rewriter) const override
+    //     {
+    //         auto t = mlir::dyn_cast< hl::PointerType >(op.getType());
+    //         auto target_type = this->convert(t.getElementType());
 
-            // Sadly, we cannot build `mlir::LLVM::GlobalOp` without
-            // providing a value attribute.
-            auto create_dummy_value = [&] () -> mlir::Attribute {
-                if (auto trg_arr = mlir::dyn_cast< mlir::LLVM::LLVMArrayType >(target_type)) {
-                    attrs_t arr(trg_arr.getNumElements(),
-                                rewriter.getIntegerAttr(rewriter.getIndexType(), 0));
-                    return rewriter.getArrayAttr(arr);
-                }
-                return rewriter.getIntegerAttr(rewriter.getIndexType(), 0);
-            };
+    //         // Sadly, we cannot build `mlir::LLVM::GlobalOp` without
+    //         // providing a value attribute.
+    //         auto create_dummy_value = [&] () -> mlir::Attribute {
+    //             if (auto trg_arr = mlir::dyn_cast< mlir::LLVM::LLVMArrayType >(target_type)) {
+    //                 attrs_t arr(trg_arr.getNumElements(),
+    //                             rewriter.getIntegerAttr(rewriter.getIndexType(), 0));
+    //                 return rewriter.getArrayAttr(arr);
+    //             }
+    //             return rewriter.getIntegerAttr(rewriter.getIndexType(), 0);
+    //         };
 
-            // So we know this is a global, otherwise it would be in `ll:`.
-            auto gop = rewriter.create< mlir::LLVM::GlobalOp >(
-                    op.getLoc(),
-                    target_type,
-                    // TODO(conv:irstollvm): Constant.
-                    true,
-                    LLVM::Linkage::Internal,
-                    op.getSymbolName(), create_dummy_value());
+    //         // So we know this is a global, otherwise it would be in `ll:`.
+    //         auto gop = rewriter.create< mlir::LLVM::GlobalOp >(
+    //                 op.getLoc(),
+    //                 target_type,
+    //                 // TODO(conv:irstollvm): Constant.
+    //                 true,
+    //                 LLVM::Linkage::Internal,
+    //                 op.getSymbolName(), create_dummy_value());
 
-            // If we want the global to have a body it cannot have value attribute.
-            gop.removeValueAttr();
+    //         // If we want the global to have a body it cannot have value attribute.
+    //         gop.removeValueAttr();
 
-            // We could probably try to analyze the region to see if it isn't
-            // a case where we can just do an attribute, but for now let's
-            // just use the initializer.
-            auto &region = gop.getInitializerRegion();
-            rewriter.inlineRegionBefore(op.getInitializer(),
-                                        region, region.begin());
-            rewriter.eraseOp(op);
-            return logical_result::success();
-        }
+    //         // We could probably try to analyze the region to see if it isn't
+    //         // a case where we can just do an attribute, but for now let's
+    //         // just use the initializer.
+    //         auto &region = gop.getInitializerRegion();
+    //         rewriter.inlineRegionBefore(op.getInitializer(),
+    //                                     region, region.begin());
+    //         rewriter.eraseOp(op);
+    //         return logical_result::success();
+    //     }
 
-    };
+    // };
 
-    struct global_ref : base_pattern< hl::GlobalRefOp >
-    {
-        using op_t = hl::GlobalRefOp;
-        using base = base_pattern< op_t >;
-        using base::base;
+    // struct global_ref : base_pattern< hl::GlobalRefOp >
+    // {
+    //     using op_t = hl::GlobalRefOp;
+    //     using base = base_pattern< op_t >;
+    //     using base::base;
 
-        logical_result matchAndRewrite(
-                op_t op, typename op_t::Adaptor ops,
-                conversion_rewriter &rewriter) const override
-        {
-            auto target_type = this->convert(op.getType());
+    //     logical_result matchAndRewrite(
+    //             op_t op, typename op_t::Adaptor ops,
+    //             conversion_rewriter &rewriter) const override
+    //     {
+    //         auto target_type = this->convert(op.getType());
 
-            auto addr_of = rewriter.template create< mlir::LLVM::AddressOfOp >(
-                    op.getLoc(),
-                    target_type,
-                    op.getGlobal());
-            rewriter.replaceOp(op, addr_of);
-            return logical_result::success();
-        }
-
-    };
+    //         auto addr_of = rewriter.template create< mlir::LLVM::AddressOfOp >(
+    //                 op.getLoc(),
+    //                 target_type,
+    //                 op.getGlobal());
+    //         rewriter.replaceOp(op, addr_of);
+    //         return logical_result::success();
+    //     }
+    // };
 
     using init_conversions = util::type_list<
-        uninit_var,
-        initialize_var,
-        init_list_expr,
-        vardecl,
-        global_ref
+        init_list_expr
     >;
 
     template< typename op_t >
@@ -1321,7 +1317,7 @@ namespace vast::conv::irstollvm
         }
     };
 
-    struct value_yield_in_global_var : base_pattern< hl::ValueYieldOp >,
+    struct  : base_pattern< hl::ValueYieldOp >,
                                        value_builder< value_yield_in_global_var >
     {
         using op_t = hl::ValueYieldOp;
