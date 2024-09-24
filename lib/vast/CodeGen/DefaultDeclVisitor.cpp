@@ -216,7 +216,7 @@ namespace vast::cg {
                 .freeze();
         };
 
-        auto var = maybe_declare([&] {
+        auto var = maybe_declare(decl, [&] {
             return bld.compose< hl::VarDeclOp >()
                 .bind(self.location(decl))
                 .bind(visit_as_lvalue_type(self, mctx, decl->getType()))
@@ -298,7 +298,7 @@ namespace vast::cg {
     }
 
     operation default_decl_visitor::VisitTypedefDecl(const clang::TypedefDecl *decl) {
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             return bld.compose< hl::TypeDefOp >()
                 .bind(self.location(decl))
                 .bind(self.symbol(decl))
@@ -308,7 +308,7 @@ namespace vast::cg {
     }
 
     operation default_decl_visitor::VisitTypeAliasDecl(const clang::TypeAliasDecl *decl) {
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             return bld.compose< hl::TypeAliasOp >()
                 .bind(self.location(decl))
                 .bind(self.symbol(decl))
@@ -320,12 +320,12 @@ namespace vast::cg {
 
     operation default_decl_visitor::VisitLabelDecl(const clang::LabelDecl *decl) {
         if (auto symbol = self.symbol(decl)) {
-            if (auto label = self.scope.lookup_label(symbol.value())) {
+            if (auto label = self.scope.lookup_label(decl)) {
                 return label;
             }
         }
 
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             return bld.compose< hl::LabelDeclOp >()
                 .bind(self.location(decl))
                 .bind(self.symbol(decl))
@@ -345,7 +345,7 @@ namespace vast::cg {
 
     operation default_decl_visitor::VisitEnumDecl(const clang::EnumDecl *decl) {
         if (auto symbol = self.symbol(decl)) {
-            if (auto op = self.scope.lookup_type(symbol.value())) {
+            if (auto op = self.scope.lookup_type(decl)) {
                 auto enum_decl = mlir::cast< hl::EnumDeclOp >(op);
                 // Fill in the enum constants if the enum was predeclared
                 if (decl->isComplete() && !enum_decl.isComplete()) {
@@ -358,7 +358,7 @@ namespace vast::cg {
             }
         }
 
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             if (!decl->isComplete()) {
                 return bld.compose< hl::EnumDeclOp >()
                     .bind(self.location(decl))
@@ -378,7 +378,7 @@ namespace vast::cg {
     }
 
     operation default_decl_visitor::VisitEnumConstantDecl(const clang::EnumConstantDecl *decl) {
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             auto initializer = [&](auto & /* bld */, auto loc) {
                 bld.compose< hl::ValueYieldOp >()
                     .bind_always(loc)
@@ -429,7 +429,7 @@ namespace vast::cg {
         if (auto tag = decl->getType()->getAsTagDecl()) {
             if (tag->isThisDeclarationADefinition()) {
                 if (auto symbol = self.symbol(tag)) {
-                    if (!is_declared_type(symbol.value())) {
+                    if (!is_declared_type(decl)) {
                         visit(tag);
                     }
                 }
@@ -441,7 +441,7 @@ namespace vast::cg {
             return decl->getBitWidth() ? bld.u32(decl->getBitWidthValue(actx)) : nullptr;
         };
 
-        return maybe_declare([&] {
+        return maybe_declare(decl, [&] {
             return bld.compose< hl::FieldDeclOp >()
                 .bind(self.location(decl))
                 .bind(self.symbol(decl))
