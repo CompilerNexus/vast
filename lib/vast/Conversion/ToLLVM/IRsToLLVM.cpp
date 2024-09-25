@@ -42,11 +42,11 @@ VAST_UNRELAX_WARNINGS
 
 namespace vast::conv::irstollvm
 {
-    using ignore_patterns = util::type_list<
-        ignore_pattern< hl::DeclRefOp >,
-        ignore_pattern< hl::PredefinedExpr >,
-        ignore_pattern< hl::AddressOf >,
-        ignore_pattern< hl::NullStmt >
+    using operands_forwarding_patterns = util::type_list<
+        operands_forwarding_pattern< hl::DeclRefOp >,
+        operands_forwarding_pattern< hl::PredefinedExpr >,
+        operands_forwarding_pattern< hl::AddressOf >,
+        operands_forwarding_pattern< hl::NullStmt >
     >;
 
     using erase_patterns = util::type_list<
@@ -1566,8 +1566,7 @@ namespace vast::conv::irstollvm
                 sign_conversions,
                 init_conversions,
                 base_op_conversions,
-                ignore_patterns,
-                erase_patterns,
+                operand_forwarding_patterns,
                 label_patterns,
                 lazy_op_type_conversions,
                 ll_generic_patterns,
