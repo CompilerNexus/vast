@@ -46,7 +46,10 @@ namespace vast::conv::irstollvm
         ignore_pattern< hl::DeclRefOp >,
         ignore_pattern< hl::PredefinedExpr >,
         ignore_pattern< hl::AddressOf >,
-        ignore_pattern< hl::NullStmt >,
+        ignore_pattern< hl::NullStmt >
+    >;
+
+    using erase_patterns = util::type_list<
         erase_pattern< hl::StructDeclOp >,
         erase_pattern< hl::UnionDeclOp >,
         erase_pattern< hl::TypeDeclOp >
@@ -1564,6 +1567,7 @@ namespace vast::conv::irstollvm
                 init_conversions,
                 base_op_conversions,
                 ignore_patterns,
+                erase_patterns,
                 label_patterns,
                 lazy_op_type_conversions,
                 ll_generic_patterns,
