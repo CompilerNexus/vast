@@ -459,7 +459,7 @@ namespace vast::conv {
                 operands_forwarding_pattern< hl::DeclRefOp >,
                 operands_forwarding_pattern< hl::Deref >,
                 operands_forwarding_pattern< hl::AddressOf >
-            >(mctx);
+            >(&mctx);
 
             patterns.add< memory_allocation< ll::Cell > >(mctx, tc);
             patterns.add< subscript >(mctx, tc);
